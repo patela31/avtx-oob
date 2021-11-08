@@ -241,7 +241,7 @@ resource "azurerm_public_ip" "avx-controller-public-ip" {
   resource_group_name     = azurerm_resource_group.avx-management.name
   allocation_method       = "Static"
   idle_timeout_in_minutes = 30
-  domain_name_label       = "heiavicontrol"
+  domain_name_label       = "atulavtx-ctrl"
 }
 
 # AVX Controller Interface
@@ -261,7 +261,7 @@ resource "azurerm_network_interface" "avx-ctrl-iface" {
 
 # AVX Controller VM instance
 resource "azurerm_virtual_machine" "avx-controller" {
-  name                  = "hei-gdt-mgmt-aviatrix-ctlr-01"
+  name                  = "atulavtx-ctlr01"
   location              = azurerm_resource_group.avx-management.location
   resource_group_name   = azurerm_resource_group.avx-management.name
   network_interface_ids = [azurerm_network_interface.avx-ctrl-iface.id]
@@ -309,7 +309,7 @@ resource "azurerm_public_ip" "avx-copilot-public-ip" {
   resource_group_name     = azurerm_resource_group.avx-management.name
   allocation_method       = "Static"
   idle_timeout_in_minutes = 30
-  domain_name_label       = "heiavicopilot"
+  domain_name_label       = "atulavtx-copilot"
 }
 
 # AVX Copilot Interface
@@ -329,7 +329,7 @@ resource "azurerm_network_interface" "avx-copilot-iface" {
 
 # AVX Copilot VM instance
 resource "azurerm_virtual_machine" "avx-copilot" {
-  name                  = "hei-gdt-mgmt-aviatrix-cplt-01"
+  name                  = "atulavtx-cplt01"
   location              = azurerm_resource_group.avx-management.location
   resource_group_name   = azurerm_resource_group.avx-management.name
   network_interface_ids = [azurerm_network_interface.avx-copilot-iface.id]
