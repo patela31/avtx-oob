@@ -131,7 +131,7 @@ resource "azurerm_network_security_group" "avx-copilot-nsg" {
     ignore_changes = [security_rule]
   }
 }
-
+/*
 # Fortimanager
 resource "azurerm_network_security_group" "fnt-fortiman-nsg" {
   name                = "fnt-fortiman-nsg"
@@ -194,7 +194,7 @@ resource "azurerm_network_security_group" "fnt-fortiman-nsg" {
     ignore_changes = [security_rule]
   }
 }
-
+*/
 
 ## Attach Network Interface and a Network Security Group
 
@@ -209,13 +209,13 @@ resource "azurerm_network_interface_security_group_association" "copilot-iface-n
   network_interface_id      = azurerm_network_interface.avx-copilot-iface.id
   network_security_group_id = azurerm_network_security_group.avx-copilot-nsg.id
 }
-
+/*
 # nsg attached to FortiManager
 resource "azurerm_network_interface_security_group_association" "fortiman-iface-nsg" {
   network_interface_id      = azurerm_network_interface.fnt-manager-iface.id
   network_security_group_id = azurerm_network_security_group.fnt-fortiman-nsg.id
 }
-
+*/
 
 ## Aviatrix Controller
 
