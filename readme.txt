@@ -7,4 +7,11 @@ The root module does not declare a variable named "client_secret" but a value wa
 # 3.  this deploys controller and copilot (though no initialization etc).
 
 
+### Redeploy 11th Nov 21,  
+
+Note/. 
+
++  controller admin password didn't take , used the default 'admin/<internal ip>' to login first time
+
+
 
