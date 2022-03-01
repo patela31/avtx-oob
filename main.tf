@@ -29,7 +29,7 @@ resource "azurerm_resource_group" "avx-management" {
   }
 }
 
-## Create VNet for Aviatrix Controller, Copilot 
+## Create VNet for Aviatrix Controller, Copilot and Fortimanager
 
 resource "azurerm_virtual_network" "avx-management-vnet" {
   name                = "atuvnet-oob"
@@ -85,7 +85,7 @@ resource "azurerm_network_security_group" "avx-controller-nsg" {
   }
 }
 
-/* Aviatrix CoPilot
+# Aviatrix CoPilot
 resource "azurerm_network_security_group" "avx-copilot-nsg" {
   name                = "atlavtx-copilot"
   location            = azurerm_resource_group.avx-management.location
@@ -146,7 +146,71 @@ resource "azurerm_network_security_group" "avx-copilot-nsg" {
     ignore_changes = [security_rule]
   }
 }
+/*
+# Fortimanager
+resource "azurerm_network_security_group" "fnt-fortiman-nsg" {
+  name                = "fnt-fortiman-nsg"
+  location            = azurerm_resource_group.avx-management.location
+  resource_group_name = azurerm_resource_group.avx-management.name
+
+  security_rule {
+    name                       = "https"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+    description                = "https-for-fortimanager"
+  }
+
+  security_rule {
+    name                       = "AllowDevRegInbound"
+    priority                   = 200
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "514"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+    description                = "Allow 514 in for device registration"
+  }
+
+  security_rule {
+    name                       = "AllowAllOutbound"
+    priority                   = 105
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "*"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+    description                = "Allowout"
+  }
+
+  #   security_rule {
+  #   name                       = "ssh"
+  #   priority                   = 300
+  #   direction                  = "Inbound"
+  #   access                     = "Allow"
+  #   protocol                   = "Tcp"
+  #   source_port_range          = "*"
+  #   destination_port_range     = "22"
+  #   source_address_prefix      = "*"
+  #   destination_address_prefix = "*"
+  #   description = "ssh-for-copilot" # only when AVX Support asks !!
+  #
+  # }
+  lifecycle {
+    ignore_changes = [security_rule]
+  }
+}
 */
+
 ## Attach Network Interface and a Network Security Group
 
 # nsg attached to Controller
@@ -155,7 +219,18 @@ resource "azurerm_network_interface_security_group_association" "controller-ifac
   network_security_group_id = azurerm_network_security_group.avx-controller-nsg.id
 }
 
-
+# nsg attached to Copilot
+resource "azurerm_network_interface_security_group_association" "copilot-iface-nsg" {
+  network_interface_id      = azurerm_network_interface.avx-copilot-iface.id
+  network_security_group_id = azurerm_network_security_group.avx-copilot-nsg.id
+}
+/*
+# nsg attached to FortiManager
+resource "azurerm_network_interface_security_group_association" "fortiman-iface-nsg" {
+  network_interface_id      = azurerm_network_interface.fnt-manager-iface.id
+  network_security_group_id = azurerm_network_security_group.fnt-fortiman-nsg.id
+}
+*/
 
 ## Aviatrix Controller
 
@@ -224,7 +299,7 @@ resource "azurerm_virtual_machine" "avx-controller" {
     disable_password_authentication = false
   }
 }
-/*
+
 ## Aviatrix Copilot
 
 # AVX Copilot Public IP
@@ -292,45 +367,73 @@ resource "azurerm_virtual_machine" "avx-copilot" {
     disable_password_authentication = false
   }
 }
-*/
 
-module "copilot_build_azure" {
-  source                         = "github.com/AviatrixSystems/terraform-modules-copilot.git//copilot_build_azure"
-  copilot_name                   = "atulcopilot"
-  virtual_machine_admin_username = "attila10"
-  virtual_machine_admin_password = "Aviatrix123#"
-  location                       = "West Europe"
-  use_existing_vnet              = "true"
-  resource_group_name            = azurerm_resource_group.avx-management.name
-  subnet_id                      = azurerm_subnet.avx-management-vnet-subnet1.id
+/*
+## Fortimanager resources
 
-
-  allowed_cidrs = {
-    "tcp_cidrs" = {
-      priority = "100"
-      protocol = "tcp"
-      ports    = ["443"]
-      cidrs    = ["0.0.0.0/0"]
-    }
-    "udp_cidrs" = {
-      priority = "200"
-      protocol = "udp"
-      ports    = ["5000", "31283"]
-      cidrs    = ["0.0.0.0/0"]
-    }
-  }
-
-  additional_disks = {
-    "one" = {
-      managed_disk_id = "copilotdata"
-      lun             = "1"
-    }
-    "two" = {
-      managed_disk_id = "copilotdata2"
-      lun             = "2"
-    }
-  }
-  depends_on = [
-    azurerm_subnet.avx-management-vnet-subnet1,
-  ]  
+# Fortimanager static public IP
+resource "azurerm_public_ip" "fnt-manager-public-ip" {
+  name                    = "fnt-manager-public-ip"
+  location                = azurerm_resource_group.avx-management.location
+  resource_group_name     = azurerm_resource_group.avx-management.name
+  allocation_method       = "Static"
+  idle_timeout_in_minutes = 30
+  domain_name_label       = "heifortiman01"
 }
+
+# Fortimanager Network Interface + private IP
+resource "azurerm_network_interface" "fnt-manager-iface" {
+  name                = "fnt-manager-nic"
+  location            = azurerm_resource_group.avx-management.location
+  resource_group_name = azurerm_resource_group.avx-management.name
+
+  ip_configuration {
+    name                          = "fnt-manager-nic"
+    subnet_id                     = azurerm_subnet.avx-management-vnet-subnet1.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.10.10.20"
+    public_ip_address_id          = azurerm_public_ip.fnt-manager-public-ip.id
+  }
+}
+
+# Fortigate Manager VM instance
+resource "azurerm_virtual_machine" "fnt-manager" {
+  name                  = "hei-gdt-mgmt-fortimanager-ctlr-01"
+  location              = azurerm_resource_group.avx-management.location
+  resource_group_name   = azurerm_resource_group.avx-management.name
+  network_interface_ids = [azurerm_network_interface.fnt-manager-iface.id]
+  vm_size               = "Standard_D2_v2"
+
+  delete_data_disks_on_termination = true
+
+  storage_image_reference {
+    offer     = "fortinet-fortimanager"
+    publisher = "fortinet"
+    sku       = "fortinet-fortimanager"
+    version   = "6.4.5"
+  }
+
+  plan {
+    name      = "fortinet-fortimanager"
+    publisher = "fortinet"
+    product   = "fortinet-fortimanager"
+  }
+
+  storage_os_disk {
+    name              = "fgtdisk1"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+    managed_disk_type = "Standard_LRS"
+  }
+
+  os_profile {
+    computer_name  = "fortimanager"
+    admin_username = "heiadmin" #Code Message="The Admin Username specified is not allowed."
+    admin_password = "Avi@tr1xRocks!!"
+  }
+
+  os_profile_linux_config {
+    disable_password_authentication = false
+  }
+}
+*/
