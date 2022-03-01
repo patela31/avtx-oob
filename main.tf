@@ -29,7 +29,7 @@ resource "azurerm_resource_group" "avx-management" {
   }
 }
 
-## Create VNet for Aviatrix Controller, Copilot and Fortimanager
+## Create VNet for Aviatrix Controller, Copilot 
 
 resource "azurerm_virtual_network" "avx-management-vnet" {
   name                = "atuvnet-oob"
@@ -85,7 +85,7 @@ resource "azurerm_network_security_group" "avx-controller-nsg" {
   }
 }
 
-# Aviatrix CoPilot
+/* Aviatrix CoPilot
 resource "azurerm_network_security_group" "avx-copilot-nsg" {
   name                = "atlavtx-copilot"
   location            = azurerm_resource_group.avx-management.location
@@ -146,71 +146,7 @@ resource "azurerm_network_security_group" "avx-copilot-nsg" {
     ignore_changes = [security_rule]
   }
 }
-/*
-# Fortimanager
-resource "azurerm_network_security_group" "fnt-fortiman-nsg" {
-  name                = "fnt-fortiman-nsg"
-  location            = azurerm_resource_group.avx-management.location
-  resource_group_name = azurerm_resource_group.avx-management.name
-
-  security_rule {
-    name                       = "https"
-    priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "443"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-    description                = "https-for-fortimanager"
-  }
-
-  security_rule {
-    name                       = "AllowDevRegInbound"
-    priority                   = 200
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "514"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-    description                = "Allow 514 in for device registration"
-  }
-
-  security_rule {
-    name                       = "AllowAllOutbound"
-    priority                   = 105
-    direction                  = "Outbound"
-    access                     = "Allow"
-    protocol                   = "*"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
-    description                = "Allowout"
-  }
-
-  #   security_rule {
-  #   name                       = "ssh"
-  #   priority                   = 300
-  #   direction                  = "Inbound"
-  #   access                     = "Allow"
-  #   protocol                   = "Tcp"
-  #   source_port_range          = "*"
-  #   destination_port_range     = "22"
-  #   source_address_prefix      = "*"
-  #   destination_address_prefix = "*"
-  #   description = "ssh-for-copilot" # only when AVX Support asks !!
-  #
-  # }
-  lifecycle {
-    ignore_changes = [security_rule]
-  }
-}
 */
-
 ## Attach Network Interface and a Network Security Group
 
 # nsg attached to Controller
@@ -219,18 +155,7 @@ resource "azurerm_network_interface_security_group_association" "controller-ifac
   network_security_group_id = azurerm_network_security_group.avx-controller-nsg.id
 }
 
-# nsg attached to Copilot
-resource "azurerm_network_interface_security_group_association" "copilot-iface-nsg" {
-  network_interface_id      = azurerm_network_interface.avx-copilot-iface.id
-  network_security_group_id = azurerm_network_security_group.avx-copilot-nsg.id
-}
-/*
-# nsg attached to FortiManager
-resource "azurerm_network_interface_security_group_association" "fortiman-iface-nsg" {
-  network_interface_id      = azurerm_network_interface.fnt-manager-iface.id
-  network_security_group_id = azurerm_network_security_group.fnt-fortiman-nsg.id
-}
-*/
+
 
 ## Aviatrix Controller
 
@@ -405,4 +330,7 @@ module "copilot_build_azure" {
       lun             = "2"
     }
   }
+  depends_on = [
+    azurerm_subnet.avx-management-vnet-subnet1,
+  ]  
 }
